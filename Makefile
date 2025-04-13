@@ -7,10 +7,10 @@ RM = rm -f
 all: Server Client
 
 Server: server.cpp
-	$(C++) -Wall -Waextra -O2 $(CFLAGS) server.cpp -o server 
+	$(C++) -std=c++11 -Wall -Wextra -O2 $(CFLAGS) server.cpp -o server 
 
 Client: client.cpp
-	$(C++) -Wall -Waextra -O2 $(CFLAGS) client.cpp -o client
+	$(C++) -std=c++11 -Wall -Wextra -O2 $(CFLAGS) client.cpp -o client
 
 clean: 
 	$(RM) server
