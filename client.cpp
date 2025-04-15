@@ -10,9 +10,9 @@
 #include <netinet/ip.h>
 // C++ 
 #include <vector>
+#include <map>
 
-
-const size_t k_max_msg = 32 << 20;
+const size_t k_max_msg = 4096;
 
 static void msg(const char *msg) {
     fprintf(stderr, "%s\n", msg);
@@ -24,7 +24,7 @@ static void die(const char *msg) {
     abort();
 }
 
-static int32_t read_full (int _fd, uint8_t *_buf, size_t _n)
+static int32_t read_full (int _fd, char *_buf, size_t _n)
 {
     while(_n > 0)
     {
@@ -42,7 +42,7 @@ static int32_t read_full (int _fd, uint8_t *_buf, size_t _n)
         return 0;
 }
 
-static int32_t write_all(int _fd, const uint8_t *_buf, size_t _n)
+static int32_t write_all(int _fd, const char *_buf, size_t _n)
 {
     while( _n > 0)
     {
@@ -68,26 +68,43 @@ static void buf_append(std::vector<uint8_t> &buf, const uint8_t *data, size_t le
 }
 
 
-static int32_t send_req(int fd, const uint8_t *text, size_t len)
+static int32_t send_req(int fd, const std::vector<std::string> &cmd)
 {
-    if(len > k_max_msg)
+    uint8_t len = 4;
+    for(const std::string &s : cmd)
+    {
+        len += 4 + s.size();
+    }
+    if (len > k_max_msg)
     {
         return -1;
     }
+    
+    char wbuf[4 + k_max_msg];
+    memcpy(&wbuf[0], &len, 4);
+    uint32_t n = cmd.size();
+    memcpy(&wbuf[4], &n, 4);
+    size_t cur = 8;
+    for (const std::string &s : cmd)
+    {
+        uint32_t p = (uint32_t)s.size();
+        memcpy(&wbuf[cur], &p, 4);
+        memcpy(&wbuf[cur + 4], s.data(), s.size());
+        cur += 4 + s.size();
+    }
 
-    std::vector<uint8_t> wbuf;
-    buf_append(wbuf, (const uint8_t *)&len, 4);
-    buf_append(wbuf, text, len);
-    return write_all(fd, wbuf.data(), wbuf.size());
+    return write_all(fd, wbuf, 4 + len);
+    
+
+   
 }
 
 static int32_t read_res(int fd)
 {
     // 4 bytes header
-    std::vector<uint8_t> rbuf;
-    rbuf.resize(4);
+    char rbuf[4 + k_max_msg +1];
     errno = 0;
-    int32_t err = read_full(fd, &rbuf[0], 4);
+    int32_t err = read_full(fd, rbuf, 4);
     if (err)
     {
         if(errno == 0)
@@ -102,7 +119,7 @@ static int32_t read_res(int fd)
     }
 
     uint32_t len = 0;
-    memcpy(&len, rbuf.data(), 4);
+    memcpy(&len, rbuf, 4);
     if( len  > k_max_msg)
     {
         msg("too long");
@@ -110,7 +127,7 @@ static int32_t read_res(int fd)
     }
 
     // reply body
-    rbuf.resize(4 + len);
+    
     err = read_full(fd, &rbuf[4], len);
     if(err)
     {
@@ -118,12 +135,23 @@ static int32_t read_res(int fd)
         return err;
     }
 
+    uint32_t rescode = 0;
+    if (len < 4)
+    {
+        msg("bad response");
+        return -1;
+    }
+
+    memcpy(&rescode, &rbuf[4], 4);
+
     // so something
-    printf("len:%u data:%.*s\n", len, len < 100 ? len : 100, &rbuf[4]);
+    printf("server says: [%u] %.*s\n", rescode, len - 4, &rbuf[8]);
     return 0;
 }
 
-int main()
+
+
+int main(int argc, char **argv)
 {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -145,32 +173,21 @@ int main()
     }
 
 
-    // multiple pipelined requests
-    std::vector<std::string> query_list = 
-    {
-        "hello1", "hello2", "hello3", std::string(k_max_msg, 'z'),
-        "hello5",
-    };
-
-    for( const std::string &s : query_list)
-    {
-        int32_t err = send_req(fd, (uint8_t *)s.data(), s.size());
-        if (err)
-        {
-            msg("error");
-            goto L_DONE;
-        }
-    }
-
-    for (size_t i = 0; i < query_list.size(); ++i)
-    {
-        int32_t err = read_res(fd);
-        if(err)
-        {
-            msg("error");
-            goto L_DONE;
-        }
-    }
+   std::vector<std::string> cmd;
+   for (int i = 1; i < argc; ++i)
+   {
+        cmd.push_back(argv[i]);
+   }
+   int32_t err = send_req(fd, cmd);
+   if (err) 
+   {
+        goto L_DONE;
+   }
+   err = read_res(fd);
+   if (err)
+   {
+        goto L_DONE;
+   }
     
 
 L_DONE:
