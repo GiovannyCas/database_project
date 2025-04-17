@@ -15,7 +15,7 @@ static void h_init(HTab *htab, size_t n)
 //hashtable insertion
 static void h_insert(HTab *htab, HNode *node)
 {
-    size_t pos = node->hcode & htab->mask;
+    size_t pos = node->hcode & htab->mask;  // node->hcode & (n - 1) 
     HNode *next = htab->tab[pos];
     node->next = next;
     htab->tab[pos] = node;
@@ -33,12 +33,12 @@ static HNode **h_lookup(HTab *htab, HNode *key, bool(*eq)(HNode *, HNode *))
 
 
     size_t pos = key->hcode & htab->mask;
-    HNode **from = &htab->tab[pos];
+    HNode **from = &htab->tab[pos];                             // incoming pointer to the target
     for (HNode *cur; (cur = *from) != NULL; from = &cur->next)
     {
         if(cur->hcode == key->hcode && eq(cur, key))
         {
-            return from;
+            return from;                                          
         }
     }
 
@@ -156,4 +156,26 @@ size_t hm_size(HMap *hmap)
 {
     return hmap->newer.size + hmap->older.size;
 }
-    
+
+
+
+static bool h_foreach(HTab *htab, bool (*f)(HNode *, void *), void *arg)
+{
+    for (size_t i = 0; htab->mask != 0 && i < htab->mask; i++)
+    {
+        for (HNode *node = htab->tab[i]; node != NULL; node = node->next)
+        {
+            if(!f(node, arg))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
+void hm_foreach(HMap *hmap, bool (*f)(HNode *, void *), void *arg)
+{
+    h_foreach(&hmap->newer, f, arg) && h_foreach(&hmap->older, f, arg);
+}

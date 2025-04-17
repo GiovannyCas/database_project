@@ -24,3 +24,6 @@ hashtable.o: hashtable.cpp hashtable.h
 clean: 
 	$(RM) server
 	$(RM) client 
+	$(RM) hashtable
+	$(RM) hashtable.o
+	$(RM) server.o

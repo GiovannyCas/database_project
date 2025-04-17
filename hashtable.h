@@ -8,7 +8,7 @@
 struct HNode
 {
     HNode *next = NULL;
-    uint64_t hcode= 0;
+    uint64_t hcode= 0;      // hash value
 };
 
 // a simple fixed-sized hashtable
@@ -34,3 +34,4 @@ HNode *hm_delete(HMap *hmap, HNode *node, bool (*eq)(HNode *, HNode *));
 void hm_clear(HMap *hmap);
 size_t hm_size(HMap *hmap);
     
+void hm_foreach(HMap *hmap, bool (*f)(HNode *, void *), void *arg);
