@@ -4,3 +4,4 @@ server
 /server.dSYM
 server.o
 hashtable.o
+/test
