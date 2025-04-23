@@ -79,7 +79,7 @@ static void buf_append(std::vector<uint8_t> &buf, const uint8_t *data, size_t le
 
 static int32_t send_req(int fd, const std::vector<std::string> &cmd)
 {
-    uint8_t len = 4;
+    uint32_t len = 4;
     for (const std::string &s : cmd)
     {
         len += 4 + s.size();
@@ -91,7 +91,7 @@ static int32_t send_req(int fd, const std::vector<std::string> &cmd)
 
     char wbuf[4 + k_max_msg];
     memcpy(&wbuf[0], &len, 4);
-    uint32_t n = cmd.size();
+    uint32_t n = (uint32_t)cmd.size();
     memcpy(&wbuf[4], &n, 4);
     size_t cur = 8;
     for (const std::string &s : cmd)
@@ -117,7 +117,7 @@ static int32_t print_response(const uint8_t *data, size_t size)
     switch (data[0])
     {
     case TAG_NIL:
-        printf("(nils)\n");
+        printf("(nil)\n");
         return 1;
 
     case TAG_ERR:
