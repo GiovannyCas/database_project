@@ -4,4 +4,8 @@ server
 /server.dSYM
 server.o
 hashtable.o
+zset.o
+avl.o
 /test
+.vscode
+.DS_Store

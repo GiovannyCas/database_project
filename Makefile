@@ -6,17 +6,17 @@ OBJS = hashtable.o avl.o zset.o
 
 
 
-all: Server Client
+all: server.exe Client
 
 
 
-Server: server.o $(OBJS)
-	$(C++) $(C++Ver) -Wall -Wextra -O2 $(CFLAGS) -o server server.o $(OBJS)
+server.exe: server.o $(OBJS)
+	$(C++) $(C++Ver) -Wall -Wextra -O2 $(CFLAGS) -o $@ server.o $(OBJS)
 
 Client: client.cpp
 	$(C++) $(C++Ver) -Wall -Wextra -O2 $(CFLAGS) client.cpp -o client
 
-server.o: server.cpp hashtable.h common.h zset.h
+server.o: server.cpp hashtable.h common.h zset.h list.h
 	$(C++) $(C++Ver) -Wall -Wextra -O2 $(CFLAGS) -c server.cpp
 
 hashtable.o: hashtable.cpp hashtable.h
@@ -30,6 +30,7 @@ zset.o: zset.cpp zset.h hashtable.h avl.h common.h
 
 clean: 
 	$(RM) server
+	$(RM) server.exe
 	$(RM) client 
 	$(RM) hashtable
 	$(RM) zset
