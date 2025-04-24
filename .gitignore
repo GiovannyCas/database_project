@@ -6,6 +6,7 @@ server.o
 hashtable.o
 zset.o
 avl.o
+server.exe
 /test
 .vscode
 .DS_Store
